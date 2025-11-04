@@ -1,0 +1,17 @@
+1 - Definição do protocólo -> 
+    1.1 - Definir a estrutura do pacote que será enviado -> 
+        1.1.1 - Campos do pacote? -> 
+        1.1.2 - Tamanho em bytes de cada pacote -> 
+
+2 - Implementação básica cliente/servidor -> 
+    2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado -> 
+    2.2 - Servidor básico que irá receber este pacote e manipulá-lo ->
+
+3 - Implementação da confiabilidade do protocólo -> 
+    3.1 - Implementar gerenciamento de estado no servidor, ou seja, o servidor gerenciará o status de conexão dos clientes -> 
+    3.2 - Implementar lógica de envio de confirmação de recebimento de pacotes(ACK) no servidor -> 
+    3.3 - Implementar timeout no cliente, tendo em vista as funcionalidades que são necessárias implementar a partir dele -> 
+    3.4 - Implementar base para todas as funcionalidades que foram listadas, tanto no cliente quanto no servidor -> 
+
+4 - Testes -> 
+    4.1 - Testar e garantir funcionamento de todas as funcionalidades listadas ->
