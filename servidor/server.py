@@ -1,0 +1,146 @@
+import socket
+import threading
+import struct
+import zlib
+from cliente.package import Package
+from decouple import config
+import logging
+
+
+class Server:
+
+    HEADER_FORMAT = config("HEADER_FORMAT")
+    HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+    FLAG_SYN = config("FLAG_SYN")
+    FLAG_ACK = config("FLAG_ACK")
+    FLAG_FIN = config("FLAG_FIN")
+    SERVER_ADDRESS = config("SERVER_ADDRESS")
+    clients_state = {} # Armazenará o estado dos clientes conectados
+    clients_lock = threading.Lock() # 'Trava' para gerenciar o acesso ao dicionário 'clients_state'
+    
+
+    def __init__(self):
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.start_server()
+
+    def handle_packet(self, raw_data, client_address, server_socket):
+        """
+        Função executada por um processo isolado a cada pacote recebido de um cliente
+        """
+
+        logging.info(
+            f"Thread name: {threading.current_thread().name}\n" +
+            f"Tamanho do pacote recebido: {len(raw_data)}\n" + 
+            f"Endereço IP do cliente: {client_address}"
+        )
+
+        # Manipulando pacote recebido e calculando checksum:
+        try:
+            # desempacotando:
+            package = Package()
+            package_message = package.unpack_package(raw_data)
+            
+            # Obtendo um checksum para validação:
+            header_for_check = struct.pack('!IIHH', package.sequence_number, package.ack_number, package.flags, 0)
+            checksum_calculated = zlib.crc32(header_for_check + package.data) & 0xffff
+
+            # Validando checksum:
+            if checksum_calculated != package.checksum:
+                logging.error(f"[ERRO] Checksum inválido de {client_address}. Pacote descartado.")
+                return
+            
+            logging.info(f"[PACOTE RECEBIDO] -> {package_message}")
+
+        except Exception as e:
+            logging.error(f"[ERRO] Erro ao desempacotar pacote de {client_address}: {e}")
+            return
+
+        # Lógica de confirmação de recebimento de pacotes:
+        with self.clients_lock:
+            
+            # Verificando se é um cliente novo
+            if client_address not in self.clients_state:
+                if package.flags & self.FLAG_SYN:
+                    logging.info(f"[CONEXÃO] Iniciando conexão para um novo cliente...\n IP:{client_address}")
+
+                    # Inicializa o estado para este novo cliente:
+                    self.clients_state[client_address] = {
+                        'expected_number_sequence': package.sequence_number + 1,
+                        'state': 'CONNECTED' ,
+                        'last_ack_sended': package.ack_number
+                    }
+
+                    # Preparando pacote de confirmação para envio:
+                    ack_package = Package(sequence_number=0, 
+                                    ack_num=package.sequence_number + 1,
+                                    flags=(self.FLAG_SYN | self.FLAG_ACK))
+                    
+                    self.server_socket.sendto(ack_pkt.pack(), client_address)
+                    print(f"[RESPOSTA] Enviando SYN-ACK para {client_address}")
+                    
+                else:
+                    # Pacote não-SYN de um cliente desconhecido. Descartar.
+                    print(f"[AVISO] Pacote de {client_address} (desconhecido) sem flag SYN. Descartado.")
+                    return # Sai da função (e a thread morre)
+            
+            # 4. Se for um cliente existente (Lógica de Dados, ACK, FIN...)
+            else:
+                client = clients_state[client_address]
+                
+                # TODO: Implementar a lógica de recebimento de dados
+                # Ex: if pkt.seq_num == client['expected_seq']:
+                #       processar_dados(pkt.data)
+                #       client['expected_seq'] += len(pkt.data) # (Se for por bytes)
+                #       enviar_ack(...)
+                #
+                # TODO: Implementar a lógica de FIN (fechamento de conexão)
+                # Ex: if pkt.flags & FLAG_FIN:
+                #       client['state'] = 'FIN_WAIT'
+                #       enviar_ack(...)
+                #       enviar_fin(...)
+                pass # Placeholder
+
+        # --- Fim da Seção Crítica ---
+        
+        # A thread termina seu trabalho aqui
+
+    def start_server(self):
+        """
+        Função principal que inicia o servidor (Thread Principal).
+        """
+        # 1. Criar o Socket UDP
+        # AF_INET = Endereçamento IPv4
+        # SOCK_DGRAM = Socket de Datagrama (UDP)
+
+        
+        # 2. Vincular (Bind) o socket ao nosso endereço e porta
+        try:
+            server_socket.bind(SERVER_ADDRESS)
+            print(f"✅ Servidor UDP escutando em {SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}")
+        except OSError as e:
+            print(f"❌ Falha ao vincular socket: {e}. A porta já está em uso?")
+            return
+
+        # 3. Loop Principal (Apenas escuta)
+        try:
+            while True:
+                # Esta chamada é BLOQUEANTE. O código para aqui até um pacote chegar.
+                # 1024 é o tamanho máximo do buffer (em bytes)
+                raw_data, client_address = server_socket.recvfrom(1024) 
+                
+                # 4. Iniciar uma nova Thread "Trabalhadora" para lidar com o pacote
+                # Passamos os dados, o endereço do cliente e o próprio socket (para respostas)
+                worker_thread = threading.Thread(
+                    target=handle_packet, 
+                    args=(raw_data, client_address, server_socket)
+                )
+                worker_thread.start() # Inicia a thread
+                
+        except KeyboardInterrupt:
+            print("\n🚫 Servidor sendo desligado (Ctrl+C).")
+        finally:
+            server_socket.close()
+            print("Socket do servidor fechado.")
+
+if __name__ == "__main__":
+    start_server()

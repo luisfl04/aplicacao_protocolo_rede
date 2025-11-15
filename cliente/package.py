@@ -3,8 +3,7 @@ import zlib # Para checksum
 import logging
 from decouple import config
 
-class Packet:
-
+class Package:
     HEADER_FORMAT = config("HEADER_FORMAT")
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
     FLAG_SYN = config("FLAG_SYN") 
@@ -67,7 +66,7 @@ class Packet:
             sequence_number, ack_number, flags, checksum_received = struct.unpack(self.HEADER_FORMAT, header_data)
             
             # Criando o objeto packet e armazenando o checksum:
-            packet = Packet(sequence_number, ack_number, flags, data)
+            packet = Package(sequence_number, ack_number, flags, data)
             packet.checksum = checksum_received
             
             return packet
