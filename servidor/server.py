@@ -2,13 +2,12 @@ import socket
 import threading
 import struct
 import zlib
-from cliente.package import Package
+from ..cliente.package import Package
 from decouple import config
 import logging
 
 
 class Server:
-
     HEADER_FORMAT = config("HEADER_FORMAT")
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
     FLAG_SYN = config("FLAG_SYN")
@@ -120,23 +119,21 @@ class Server:
         # 3. Loop Principal (Apenas escuta)
         try:
             while True:
-                # Esta chamada é BLOQUEANTE. O código para aqui até um pacote chegar.
-                # 1024 é o tamanho máximo do buffer (em bytes)
-                raw_data, client_address = server_socket.recvfrom(1024) 
+                # Espera pelo envio de um pacote:
+                raw_data, client_address = self.server_socket.recvfrom(1024) 
                 
-                # 4. Iniciar uma nova Thread "Trabalhadora" para lidar com o pacote
-                # Passamos os dados, o endereço do cliente e o próprio socket (para respostas)
+                # Inicia o processo para lidar com o pcaote recebido:
                 worker_thread = threading.Thread(
-                    target=handle_packet, 
-                    args=(raw_data, client_address, server_socket)
+                    target=self.handle_packet, 
+                    args=(raw_data, client_address, self.server_socket)
                 )
                 worker_thread.start() # Inicia a thread
                 
         except KeyboardInterrupt:
             print("\n🚫 Servidor sendo desligado (Ctrl+C).")
         finally:
-            server_socket.close()
+            self.server_socket.close()
             print("Socket do servidor fechado.")
 
 if __name__ == "__main__":
-    start_server()
+    Server()
