@@ -15,6 +15,7 @@ class Server:
     FLAG_ACK = config("FLAG_ACK")
     FLAG_FIN = config("FLAG_FIN")
     SERVER_ADDRESS = config("SERVER_ADDRESS")
+    SERVER_PORT = config("SERVER_PORT")
     clients_state = {} # Armazenará o estado dos clientes conectados
     clients_lock = threading.Lock() # 'Trava' para gerenciar o acesso ao dicionário 'clients_state'
     
@@ -38,18 +39,18 @@ class Server:
         try:
             # desempacotando:
             package = Package()
-            package_message = package.unpack_package(raw_data)
+            package_sended = package.unpack_package(raw_data)
             
             # Obtendo um checksum para validação:
-            header_for_check = struct.pack('!IIHH', package.sequence_number, package.ack_number, package.flags, 0)
-            checksum_calculated = zlib.crc32(header_for_check + package.data) & 0xffff
+            header_for_check = struct.pack('!IIHH', package_sended.sequence_number, package_sended.ack_number, package_sended.flags, 0)
+            checksum_calculated = zlib.crc32(header_for_check + package_sended.data) & 0xffff
 
             # Validando checksum:
             if checksum_calculated != package.checksum:
                 logging.error(f"[ERRO] Checksum inválido de {client_address}. Pacote descartado.")
                 return
             
-            logging.info(f"[PACOTE RECEBIDO] -> {package_message}")
+            logging.info(f"[PACOTE RECEBIDO] -> {package_sended}")
 
         except Exception as e:
             logging.error(f"[ERRO] Erro ao desempacotar pacote de {client_address}: {e}")
@@ -57,66 +58,61 @@ class Server:
 
         # Lógica de confirmação de recebimento de pacotes:
         with self.clients_lock:
-            
-            # Verificando se é um cliente novo
-            if client_address not in self.clients_state:
-                if package.flags & self.FLAG_SYN:
-                    logging.info(f"[CONEXÃO] Iniciando conexão para um novo cliente...\n IP:{client_address}")
+            try:
+                # Verificando se é um cliente novo
+                if client_address not in self.clients_state:
+                    if package_sended.flags & self.FLAG_SYN:
+                        logging.info(f"[CONEXÃO] Iniciando conexão para um novo cliente...\n IP:{client_address}")
 
-                    # Inicializa o estado para este novo cliente:
-                    self.clients_state[client_address] = {
-                        'expected_number_sequence': package.sequence_number + 1,
-                        'state': 'CONNECTED' ,
-                        'last_ack_sended': package.ack_number
-                    }
+                        # Inicializa o estado para este novo cliente:
+                        self.clients_state[client_address] = {
+                            'expected_number_sequence': package_sended.sequence_number + 1,
+                            'state': 'CONNECTED' ,
+                            'last_ack_sended': package_sended.ack_number
+                        }
 
-                    # Preparando pacote de confirmação para envio:
-                    ack_package = Package(sequence_number=0, 
-                                    ack_num=package.sequence_number + 1,
-                                    flags=(self.FLAG_SYN | self.FLAG_ACK))
-                    
-                    self.server_socket.sendto(ack_pkt.pack(), client_address)
-                    print(f"[RESPOSTA] Enviando SYN-ACK para {client_address}")
-                    
-                else:
-                    # Pacote não-SYN de um cliente desconhecido. Descartar.
-                    print(f"[AVISO] Pacote de {client_address} (desconhecido) sem flag SYN. Descartado.")
-                    return # Sai da função (e a thread morre)
-            
-            # 4. Se for um cliente existente (Lógica de Dados, ACK, FIN...)
-            else:
-                client = clients_state[client_address]
+                        # Preparando pacote de confirmação para envio:
+                        ack_package = Package(sequence_number=0, 
+                                        ack_number=package_sended.sequence_number + 1,
+                                        flags=(self.FLAG_SYN | self.FLAG_ACK), data=b"Pacote de confirmacao")
+                        
+                        self.server_socket.sendto(ack_package.pack_package(), client_address)
+                        logging.info(f"[RESPOSTA] Enviando SYN-ACK para {client_address}")
+                        return
+                    else:
+                        # Pacote não-SYN de um cliente desconhecido. Descartar.
+                        logging.info(f"[AVISO] Pacote de {client_address} (desconhecido) sem flag de sincronização. Descartado.")
+                        return
                 
-                # TODO: Implementar a lógica de recebimento de dados
-                # Ex: if pkt.seq_num == client['expected_seq']:
-                #       processar_dados(pkt.data)
-                #       client['expected_seq'] += len(pkt.data) # (Se for por bytes)
-                #       enviar_ack(...)
-                #
-                # TODO: Implementar a lógica de FIN (fechamento de conexão)
-                # Ex: if pkt.flags & FLAG_FIN:
-                #       client['state'] = 'FIN_WAIT'
-                #       enviar_ack(...)
-                #       enviar_fin(...)
-                pass # Placeholder
+                else:
+                    client = self.clients_state[client_address]
 
-        # --- Fim da Seção Crítica ---
-        
-        # A thread termina seu trabalho aqui
+                    # Verificando número de sequência do pacote:
+                    if package_sended.sequence_number != client['expected_number_sequence']:
+                        logging.error(f"[EERO] Pacote do cliente {client_address} enviado fora de sequência. Pacote descartado.")
+                        return
+
+                    ack_package = Package(sequence_number=client['last_ack_sended'] + 1, 
+                                        ack_num=package.sequence_number + 1,
+                                        flags=(self.FLAG_SYN | self.FLAG_ACK),
+                                        data=b"Pacote de confirmacao"
+                                        )
+                    
+                    logging.info(f"[RESPOSTA] Enviando SYN-ACK para {client_address}")
+                    self.server_socket.sendto(ack_package.pack_package(), client_address)
+                    logging.info("ACK enviado, processo finalizado.")
+                    return
+            except Exception as e:
+                logging.error(f"[ERRO] Exceção ao confirmar o envio de pacote do cliente {client_address}\nLog: {e}")
 
     def start_server(self):
         """
         Função principal que inicia o servidor (Thread Principal).
-        """
-        # 1. Criar o Socket UDP
-        # AF_INET = Endereçamento IPv4
-        # SOCK_DGRAM = Socket de Datagrama (UDP)
-
-        
+        """        
         # 2. Vincular (Bind) o socket ao nosso endereço e porta
         try:
-            server_socket.bind(SERVER_ADDRESS)
-            print(f"✅ Servidor UDP escutando em {SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}")
+            self.server_socket.bind(self.SERVER_ADDRESS)
+            print(f"✅ Servidor UDP escutando em {self.SERVER_ADDRESS[0]}:{self.SERVER_PORT}")
         except OSError as e:
             print(f"❌ Falha ao vincular socket: {e}. A porta já está em uso?")
             return

@@ -52,7 +52,7 @@ class Package:
         
         # 3. Re-empacota o cabeçalho, agora com o checksum correto
 
-    def unpack_package(self, raw_data) -> object | None:
+    def unpack_package(self, raw_data):
         """ 
             Desempacota bytes crus em um objeto Packet.
         """
