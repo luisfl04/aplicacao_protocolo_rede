@@ -9,9 +9,9 @@ from decouple import config
 class Server:
     HEADER_FORMAT = config("HEADER_FORMAT")
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
-    FLAG_SYN = config("FLAG_SYN")
-    FLAG_ACK = config("FLAG_ACK")
-    FLAG_CHECKSUM = config("FLAG_CHECKSUM")
+    FLAG_SYN = 1 << 0
+    FLAG_ACK = 1 << 1
+    FLAG_CHECKSUM = 1 << 2
     SERVER_ADDRESS = config("SERVER_ADDRESS")
     SERVER_PORT = int(config("SERVER_PORT"))
     clients_state = {} # Armazenará o estado dos clientes conectados
@@ -19,8 +19,61 @@ class Server:
     
 
     def __init__(self):
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.start_server()
+        self.start_menu()
+
+    def start_menu(self):
+        try:
+            escolha_menu = None
+            mensagem_menu = """
+              ---------------------------------------- MENU SERVIDOR UDP ----------------------------------------
+              - Escolha uma das opções abaixo:
+              1 - Entrar em modo de escuta(Permitir recebimento de pacotes)
+              2 - Exibir clientes conectados   
+              0 - Fechar servidor 
+            """
+
+            while escolha_menu != 0:
+                print(mensagem_menu)
+                escolha_menu = int(input("Digite sua escolha -> "))
+                validacao = self.validar_entrada_usuario(entrada=escolha_menu)
+               
+                while not validacao:
+                    print("\nEntrada inválida. Digite novamente uma opção correta.")
+                    escolha_menu = int(input("Digite aqui -> "))
+                    validacao = self.validar_entrada_usuario(entrada=escolha_menu)
+
+                match escolha_menu:
+                    case 1:
+                        self.start_server()
+                    case 2:
+                        self.exibir_clientes_conectados()
+                    case 0:
+                        self.fechar_conexao()
+                        break                        
+        except Exception as e:
+            pass
+
+    def exibir_clientes_conectados(self):
+        if self.clients_state == {}:
+            print("\n--------------------------------------\nNão há clientes conectados\n--------------------------------------")
+
+
+    def fechar_conexao(self):
+        print("Encerrando servidor...")
+        self.server_socket.close()
+
+    def validar_entrada_usuario(self, entrada) -> bool:
+        try:
+            if type(entrada) != int:
+                return False
+            elif entrada < 0 or entrada > 2:
+                return False
+            return True
+        
+        except Exception as e:
+            print(f"Exceção ao validar a entrada do usuário\nlog: {e}")
+            return False
+
 
     def handle_packet(self, raw_data, client_address):
         """
@@ -28,7 +81,7 @@ class Server:
         """
 
         print(
-            f"Thread name: {threading.current_thread().name}\n" +
+            f"Pacote Recebido!\n" +
             f"Tamanho do pacote recebido: {len(raw_data)}\n" + 
             f"Endereço IP do cliente: {client_address}"
         )
@@ -105,32 +158,26 @@ class Server:
         """
         Função principal que inicia o servidor (Thread Principal).
         """        
-        # 2. Vincular (Bind) o socket ao nosso endereço e porta
         try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.server_socket.bind((self.SERVER_ADDRESS, self.SERVER_PORT))
-            print(f"✅ Servidor UDP escutando em {self.SERVER_ADDRESS}:{self.SERVER_PORT}")
+            print(f"\n---------------------------------------\nServidor UDP iniciado!\nEscutando em {self.SERVER_ADDRESS}:{self.SERVER_PORT}")
         except OSError as e:
-            print(f"❌ Falha ao vincular socket: {e}. A porta já está em uso?")
+            print(f"Falha ao vincular socket do servidor: {e}")
             return
 
-        # 3. Loop Principal (Apenas escuta)
         try:
             while True:
-                # Espera pelo envio de um pacote:
-                raw_data, client_address = self.server_socket.recvfrom(1024)
-                
-                # Inicia o processo para lidar com o pcaote recebido:
+                print("Pronto para receber pacotes...")
+                raw_data, client_address = self.server_socket.recvfrom(1024)                
                 worker_thread = threading.Thread(
                     target=self.handle_packet, 
                     args=(raw_data, client_address)
                 )
-                worker_thread.start() # Inicia a thread
+                worker_thread.start()
                 
         except KeyboardInterrupt:
             print("\n🚫 Servidor sendo desligado (Ctrl+C).")
-        finally:
-            self.server_socket.close()
-            print("Socket do servidor fechado.")
 
 if __name__ == "__main__":
     Server()

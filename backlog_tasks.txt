@@ -5,13 +5,17 @@
 
 2 - Implementação básica cliente/servidor -> 
     2.2 - Servidor básico que irá receber este pacote e manipulá-lo -> Ok
-    2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado ->  
+    2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado ->  Ok
 
-3 - Implementação da confiabilidade do protocólo -> 
-    3.1 - Implementar gerenciamento de estado no servidor, ou seja, o servidor gerenciará o status de conexão dos clientes -> 
-    3.2 - Implementar lógica de envio de confirmação de recebimento de pacotes(ACK) no servidor -> 
-    3.3 - Implementar timeout no cliente, tendo em vista as funcionalidades que são necessárias implementar a partir dele -> 
-    3.4 - Implementar base para todas as funcionalidades que foram listadas, tanto no cliente quanto no servidor -> 
+3 - Estrutura básica da aplicação:
+    3.1 -> Servidor com um menu de terminal para entrar em modo de escuta ou exibir os clientes conectados -> 
+    3.2 -> Implementar gerenciamento das propiedades do cliente(numero de sequência) ->  
+
+4 - Implementação da confiabilidade do protocólo -> 
+    4.1 - Implementar gerenciamento de estado no servidor, ou seja, o servidor gerenciará o status de conexão dos clientes -> 
+    4.2 - Implementar lógica de envio de confirmação de recebimento de pacotes(ACK) no servidor -> 
+    4.3 - Implementar timeout no cliente, tendo em vista as funcionalidades que são necessárias implementar a partir dele -> 
+    4.4 - Implementar base para todas as funcionalidades que foram listadas, tanto no cliente quanto no servidor -> 
 
 4 - Testes -> 
     4.1 - Testar e garantir funcionamento de todas as funcionalidades listadas ->

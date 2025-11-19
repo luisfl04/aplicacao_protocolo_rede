@@ -70,13 +70,13 @@ class Client:
             if (response_pkt.flags & self.FLAG_SYN) and (response_pkt.flags & self.FLAG_ACK):
                 print("------------------------------------------------------------------")
                 print(f"✅ SYN-ACK recebido com sucesso de {server_address_received}!")
-                print(f"[PACOTE] SEQ={response_pkt.seq_num} ACK={response_pkt.ack_num}")
+                print(f"[PACOTE] SEQ={response_pkt.sequence_number} ACK={response_pkt.ack_number}")
                 
                 # Verificação de ACK (Deve confirmar o nosso SEQ inicial + 1)
                 if response_pkt.ack_number == initial_seq + 1:
-                    print(f"✅ Confirmação (ACK) correta: {response_pkt.ack_num} (Esperado: {initial_seq + 1})")
+                    print(f"✅ Confirmação (ACK) correta: {response_pkt.ack_number} (Esperado: {initial_seq + 1})")
                 else:
-                    print(f"❌ Confirmação (ACK) incorreta: Recebido {response_pkt.ack_num}, Esperado {initial_seq + 1}")
+                    print(f"❌ Confirmação (ACK) incorreta: Recebido {response_pkt.ack_number}, Esperado {initial_seq + 1}")
                 
                 print("------------------------------------------------------------------")
                 

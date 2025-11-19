@@ -6,9 +6,9 @@ from decouple import config
 class Package:
     HEADER_FORMAT = config("HEADER_FORMAT")
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
-    FLAG_SYN = config("FLAG_SYN") 
-    FLAG_ACK = config("FLAG_ACK")  
-    FLAG_CHECKSUM = config("FLAG_CHECKSUM")
+    FLAG_SYN = 1 << 0
+    FLAG_ACK = 1 << 1
+    FLAG_CHECKSUM = 1 << 2
 
     def __init__(self, sequence_number=0, ack_number=0, flags=0, data=b''):
         self.sequence_number = sequence_number
