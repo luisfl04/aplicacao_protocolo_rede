@@ -16,15 +16,15 @@ class Client:
     FLAG_SYN = 1 << 0
     FLAG_ACK = 1 << 1
     FLAG_CHECKSUM = 1 << 2
+    FLAG_ERRO = 1 << 3  
     HEADER_FORMAT = config("HEADER_FORMAT")
-    sequence_number = None
+    sequence_number = 0
 
     def __init__(self):
         # Iniciando cliente:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_socket.settimeout(self.CLIENT_TIMEOUT) 
-        self.start_client()
-
+        self.enviar_pacote_manipulado()
 
     def start_client(self):
         """
@@ -93,6 +93,39 @@ class Client:
         finally:
             self.client_socket.close()
             print("Socket do cliente fechado.")
+
+    def enviar_pacote_manipulado(self):
+        try:
+            self.sequence_number+=1
+            pacote = Package(sequence_number=self.sequence_number, flags=self.FLAG_SYN, data=b"Texto inicial")
+            header_pacote = struct.pack(   
+                self.HEADER_FORMAT,
+                pacote.sequence_number,
+                pacote.ack_number,
+                pacote.flags,
+                pacote.checksum
+            )
+            pacote.checksum = zlib.crc32(header_pacote + pacote.data) & 0xffff
+            header_with_checksum = struct.pack(self.HEADER_FORMAT, 
+                                            pacote.sequence_number, 
+                                            pacote.ack_number, 
+                                            pacote.flags, 
+                                            pacote.checksum)
+            pacote.data = b"Texto inicial -> Manipulado!"
+            raw_bytes = header_with_checksum + pacote.data
+            self.client_socket.sendto(raw_bytes, self.SERVER_ADDRESS_COMPLETE) 
+            raw_response, server_address_received = self.client_socket.recvfrom(1024)
+            pacote_recebido = pacote.unpack_package(raw_response)
+                
+            if (pacote_recebido.flags & self.FLAG_SYN) and (pacote_recebido.flags & self.FLAG_ACK):
+                raise Exception(f"Flags do pacote incorretas. Flag: {pacote_recebido.flags}")
+            
+            print("Negação de confirmação recebida, reenviando pacote para o servidor...")
+            time.sleep(5)
+            self.enviar_pacote_manipulado()
+        except Exception as e:
+            print(f"Exceção ao enviar pacote manipulado: {e}")
+
 
 if __name__ == "__main__":
     # Garantir que o servidor tenha tempo para iniciar

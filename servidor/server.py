@@ -12,6 +12,7 @@ class Server:
     FLAG_SYN = 1 << 0
     FLAG_ACK = 1 << 1
     FLAG_CHECKSUM = 1 << 2
+    FLAG_ERRO = 1 << 3
     SERVER_ADDRESS = config("SERVER_ADDRESS")
     SERVER_PORT = int(config("SERVER_PORT"))
     clients_state = {} # Armazenará o estado dos clientes conectados
@@ -106,9 +107,16 @@ class Server:
 
             # Validando checksum:
             if checksum_calculated != package_sended.checksum:
-                print(f"[ERRO] Checksum inválido de {client_address}. Pacote descartado.")
+                print(f"[ERRO] Checksum inválido de {client_address}. Enviando NACK...")
+                nack_package = Package(
+                    sequence_number=0,
+                    ack_number=package_sended.sequence_number, 
+                    flags=(self.FLAG_ACK | self.FLAG_ERRO),
+                    data=b''    
+                )
+                self.server_socket.sendto(nack_package.pack_package(), client_address)
+                print(f"Pacote NACK para o pacote de número {package_sended.sequence_number} do cliente {client_address} enviado.")
                 return
-            
         except Exception as e:
             print(f"[ERRO] Erro ao desempacotar pacote de {client_address}: {e}")
             return
@@ -146,7 +154,15 @@ class Server:
 
                     # Verificando número de sequência do pacote:
                     if package_sended.sequence_number != client['expected_number_sequence']:
-                        print(f"[EERO] Pacote do cliente {client_address} enviado fora de sequência. Pacote descartado.")
+                        print(f"[EERO] Pacote do cliente {client_address} enviado fora de sequência. Enviando Pacote Nack.")
+                        nack_package = Package(
+                            sequence_number=0,
+                            ack_number=package_sended.sequence_number, 
+                            flags=(self.FLAG_ACK | self.FLAG_ERRO),
+                            data=b'Reenvie o pacote'    
+                        )
+                        self.server_socket.sendto(nack_package.pack_package(), client_address)
+                        print(f"Pacote NACK para o pacote de número {package_sended.sequence_number} do cliente {client_address} enviado.")
                         return
 
                     ack_package = Package(sequence_number=client['last_ack_sended'] + 1, 

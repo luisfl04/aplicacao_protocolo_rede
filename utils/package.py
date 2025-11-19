@@ -9,6 +9,7 @@ class Package:
     FLAG_SYN = 1 << 0
     FLAG_ACK = 1 << 1
     FLAG_CHECKSUM = 1 << 2
+    FLAG_ERRO = 1 << 3
 
     def __init__(self, sequence_number=0, ack_number=0, flags=0, data=b''):
         self.sequence_number = sequence_number
@@ -58,9 +59,6 @@ class Package:
             header_data = raw_data[:self.HEADER_SIZE]
             data = raw_data[self.HEADER_SIZE:]
 
-            print(f"HEader -> {header_data}")
-            print(f"Data -> {data}")
-            
             # Desempacotando o cabeçalho:
             sequence_number, ack_number, flags, checksum_received = struct.unpack(self.HEADER_FORMAT, header_data)
             # # Criando o objeto packet e armazenando o checksum:
