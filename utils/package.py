@@ -47,9 +47,6 @@ class Package:
         except Exception as e:
             logging.error(f"Erro ao empacotar informações do pacote: {e}")
             return None
-        
-        
-        # 3. Re-empacota o cabeçalho, agora com o checksum correto
 
     def unpack_package(self, raw_data):
         """ 
@@ -60,14 +57,16 @@ class Package:
             # Filtrando cabeçalho e dados:
             header_data = raw_data[:self.HEADER_SIZE]
             data = raw_data[self.HEADER_SIZE:]
+
+            print(f"HEader -> {header_data}")
+            print(f"Data -> {data}")
             
             # Desempacotando o cabeçalho:
             sequence_number, ack_number, flags, checksum_received = struct.unpack(self.HEADER_FORMAT, header_data)
-            
-            # Criando o objeto packet e armazenando o checksum:
+            # # Criando o objeto packet e armazenando o checksum:
             packet = Package(sequence_number, ack_number, flags, data)
             packet.checksum = checksum_received
-            
+
             return packet
         except Exception as e:
             logging.error(f"Erro ao desempacotar pacote: {e}")

@@ -20,10 +20,9 @@ class Server:
 
     def __init__(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(f"adrees -> {self.SERVER_ADDRESS}") 
         self.start_server()
 
-    def handle_packet(self, raw_data, client_address, server_socket):
+    def handle_packet(self, raw_data, client_address):
         """
         Função executada por um processo isolado a cada pacote recebido de um cliente
         """
@@ -42,15 +41,13 @@ class Server:
             
             # Obtendo um checksum para validação:
             header_for_check = struct.pack('!IIHH', package_sended.sequence_number, package_sended.ack_number, package_sended.flags, 0)
-            checksum_calculated = zlib.crc32(header_for_check + package_sended.data) & 0xffff
+            checksum_calculated = zlib.crc32(header_for_check + package_sended.data) &0xffff 
 
             # Validando checksum:
-            if checksum_calculated != package.checksum:
+            if checksum_calculated != package_sended.checksum:
                 print(f"[ERRO] Checksum inválido de {client_address}. Pacote descartado.")
                 return
             
-            print(f"[PACOTE RECEBIDO] -> {package_sended}")
-
         except Exception as e:
             print(f"[ERRO] Erro ao desempacotar pacote de {client_address}: {e}")
             return
@@ -61,7 +58,7 @@ class Server:
                 # Verificando se é um cliente novo
                 if client_address not in self.clients_state:
                     if package_sended.flags & self.FLAG_SYN:
-                        print(f"[CONEXÃO] Iniciando conexão para um novo cliente...\n IP:{client_address}")
+                        print(f"[CONEXÃO] Iniciando conexão para um novo cliente...\n IP:{str(client_address)}")
 
                         # Inicializa o estado para este novo cliente:
                         self.clients_state[client_address] = {
@@ -120,12 +117,12 @@ class Server:
         try:
             while True:
                 # Espera pelo envio de um pacote:
-                raw_data, client_address = self.server_socket.recvfrom(1024) 
+                raw_data, client_address = self.server_socket.recvfrom(1024)
                 
                 # Inicia o processo para lidar com o pcaote recebido:
                 worker_thread = threading.Thread(
                     target=self.handle_packet, 
-                    args=(raw_data, client_address, self.server_socket)
+                    args=(raw_data, client_address)
                 )
                 worker_thread.start() # Inicia a thread
                 
