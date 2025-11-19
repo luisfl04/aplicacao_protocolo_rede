@@ -111,7 +111,7 @@ class Server:
         """        
         # 2. Vincular (Bind) o socket ao nosso endereço e porta
         try:
-            self.server_socket.bind(self.SERVER_ADDRESS)
+            self.server_socket.bind((self.SERVER_ADDRESS, self.SERVER_PORT))
             print(f"✅ Servidor UDP escutando em {self.SERVER_ADDRESS[0]}:{self.SERVER_PORT}")
         except OSError as e:
             print(f"❌ Falha ao vincular socket: {e}. A porta já está em uso?")
