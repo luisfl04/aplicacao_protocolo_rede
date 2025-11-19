@@ -20,7 +20,7 @@ Trabalho prático de redes: 10 pontos
     4.1 - Retransmissão por erro: ao clicar nessa opção, a aplicação irá alterar a
      informação do datagrama após calcular o checksum, montar o datagrama e transmitir.
      Na recepção, a aplicação irá detectar o erro e solicitar a retransmissão.
-    4.2 - Retransmissão por estouro de tempo: ao clicar nesse botão, a aplicação cliente
+    4.2 - Retransmissão por estouro de tempo: ao clicar nesse botão, a aplicação servidora
      passa a descartar pacotes recebidos, o que fará com que o transmissor retransmita
      os pacotes inicialmente enviados.
     4.3 - Retransmissão por descarte de confirmações: ao clicar nesse botão, a aplicação 

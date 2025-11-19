@@ -4,8 +4,8 @@
         1.1.2 - Tamanho em bytes de cada pacote -> Ok 
 
 2 - Implementação básica cliente/servidor -> 
-    2.2 - Servidor básico que irá receber este pacote e manipulá-lo -> 
-    2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado -> 
+    2.2 - Servidor básico que irá receber este pacote e manipulá-lo -> Ok
+    2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado ->  
 
 3 - Implementação da confiabilidade do protocólo -> 
     3.1 - Implementar gerenciamento de estado no servidor, ou seja, o servidor gerenciará o status de conexão dos clientes -> 

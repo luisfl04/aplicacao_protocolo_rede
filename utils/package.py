@@ -24,7 +24,6 @@ class Package:
 
         try:
             # Empacotando versão inicial do cabeçalho:
-            propriedades = self.get_package_properties()
             header = struct.pack(   
                 self.HEADER_FORMAT,
                 self.sequence_number,
