@@ -51,11 +51,19 @@ class Server:
                         self.fechar_conexao()
                         break                        
         except Exception as e:
-            pass
+            print(f"Erro no menu do servidor: {e}")
 
     def exibir_clientes_conectados(self):
         if self.clients_state == {}:
             print("\n--------------------------------------\nNão há clientes conectados\n--------------------------------------")
+            return
+        print("\nClientes conectados:")
+        for key, value in self.clients_state.items():
+            print(f"Endereço: {key}")
+            print(f"Status: {value['state']}")    
+            print(f"Ultimo número de ACK enviado: {value['last_ack_sended']}")
+            print(f"Próximo número de sequencia: {value['expected_number_sequence']}")
+            print("--------------------------------------------------")
 
 
     def fechar_conexao(self):
@@ -168,7 +176,7 @@ class Server:
 
         try:
             while True:
-                print("Pronto para receber pacotes...")
+                print("Pronto para receber pacotes..(CTRL + C para fechar).")
                 raw_data, client_address = self.server_socket.recvfrom(1024)                
                 worker_thread = threading.Thread(
                     target=self.handle_packet, 

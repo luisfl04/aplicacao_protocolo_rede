@@ -8,7 +8,7 @@
     2.1 - Implementar cliente mínimo que irá enviar o pacote que foi estruturado ->  Ok
 
 3 - Estrutura básica da aplicação:
-    3.1 -> Servidor com um menu de terminal para entrar em modo de escuta ou exibir os clientes conectados -> 
+    3.1 -> Servidor com um menu de terminal para entrar em modo de escuta ou exibir os clientes conectados -> Ok
     3.2 -> Implementar gerenciamento das propiedades do cliente(numero de sequência) ->  
 
 4 - Implementação da confiabilidade do protocólo -> 

@@ -17,6 +17,7 @@ class Client:
     FLAG_ACK = 1 << 1
     FLAG_CHECKSUM = 1 << 2
     HEADER_FORMAT = config("HEADER_FORMAT")
+    sequence_number = None
 
     def __init__(self):
         # Iniciando cliente:
@@ -33,10 +34,10 @@ class Client:
         print(f"✅ Cliente iniciado. Tentando conectar com {self.SERVER_ADDRESS_COMPLETE}")
         
         try:  
-            # Criamos um pacote com a flag SYN e um número de sequência inicial (ex: 1)
-            # Em um protocolo real, o número de sequência seria aleatório.
-            initial_seq = 1
-            syn_packet = Package(sequence_number=initial_seq, flags=self.FLAG_SYN, data=b"Requisicao")
+            if self.sequence_number == None:
+                self.sequence_number = 1
+
+            syn_packet = Package(sequence_number=self.sequence_number, flags=self.FLAG_SYN, data=b"Requisicao")
             raw_syn_bytes = syn_packet.pack_package()
             
             print(f"\n[ENVIO] Enviando SYN (SEQ={syn_packet.sequence_number}) para o servidor...")
@@ -73,10 +74,10 @@ class Client:
                 print(f"[PACOTE] SEQ={response_pkt.sequence_number} ACK={response_pkt.ack_number}")
                 
                 # Verificação de ACK (Deve confirmar o nosso SEQ inicial + 1)
-                if response_pkt.ack_number == initial_seq + 1:
-                    print(f"✅ Confirmação (ACK) correta: {response_pkt.ack_number} (Esperado: {initial_seq + 1})")
+                if response_pkt.ack_number == self.sequence_number + 1:
+                    print(f"✅ Confirmação (ACK) correta: {response_pkt.ack_number} (Esperado: {self.sequence_number + 1})")
                 else:
-                    print(f"❌ Confirmação (ACK) incorreta: Recebido {response_pkt.ack_number}, Esperado {initial_seq + 1}")
+                    print(f"❌ Confirmação (ACK) incorreta: Recebido {response_pkt.ack_number}, Esperado {self.sequence_number + 1}")
                 
                 print("------------------------------------------------------------------")
                 
