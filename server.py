@@ -2,7 +2,7 @@ import socket
 import threading
 import struct
 import zlib
-from utils.package import Package
+from package import Package
 from decouple import config
 
 
@@ -11,7 +11,7 @@ class Server:
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
     FLAG_SYN = 1 << 0
     FLAG_ACK = 1 << 1
-    FLAG_CHECKSUM = 1 << 2
+    FLAG_FINALIZACAO = 1 << 2
     FLAG_ERRO = 1 << 3
     SERVER_ADDRESS = config("SERVER_ADDRESS")
     SERVER_PORT = int(config("SERVER_PORT"))
