@@ -123,6 +123,9 @@ class Client:
             print("Negação de confirmação recebida, reenviando pacote para o servidor...")
             time.sleep(5)
             self.enviar_pacote_manipulado()
+        except TimeoutError:
+            print("Não há respostas do servidor, enviando pacote novamente...")
+            self.enviar_pacote_manipulado()
         except Exception as e:
             print(f"Exceção ao enviar pacote manipulado: {e}")
 

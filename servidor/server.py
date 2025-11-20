@@ -17,23 +17,25 @@ class Server:
     SERVER_PORT = int(config("SERVER_PORT"))
     clients_state = {} # Armazenará o estado dos clientes conectados
     clients_lock = threading.Lock() # 'Trava' para gerenciar o acesso ao dicionário 'clients_state'
+    mode_descart = False 
     
-
     def __init__(self):
         self.start_menu()
 
     def start_menu(self):
         try:
             escolha_menu = None
-            mensagem_menu = """
-              ---------------------------------------- MENU SERVIDOR UDP ----------------------------------------
-              - Escolha uma das opções abaixo:
-              1 - Entrar em modo de escuta(Permitir recebimento de pacotes)
-              2 - Exibir clientes conectados   
-              0 - Fechar servidor 
-            """
-
             while escolha_menu != 0:
+                mensagem_menu = f"""
+                ---------------------------------------- MENU SERVIDOR UDP ----------------------------------------
+
+                State: {self.get_listening_state()}
+                - Escolha uma das opções abaixo:
+                1 - Iniciar socket(Permitir recebimento de pacotes)
+                2 - Exibir clientes conectados
+                3 - {self.get_message_of_listening_mode()}
+                0 - Fechar servidor 
+                """
                 print(mensagem_menu)
                 escolha_menu = int(input("Digite sua escolha -> "))
                 validacao = self.validar_entrada_usuario(entrada=escolha_menu)
@@ -48,11 +50,40 @@ class Server:
                         self.start_server()
                     case 2:
                         self.exibir_clientes_conectados()
+                    case  3:
+                        self.set_listening_state()
                     case 0:
                         self.fechar_conexao()
                         break                        
         except Exception as e:
             print(f"Erro no menu do servidor: {e}")
+
+
+    def get_message_of_listening_mode(self) -> str:
+        try:
+            if self.mode_descart:
+                return "Entrar em modo de escuta"
+            return "Entrar no modo de bloqueio de pacotes"
+        except Exception as e:
+            return f"Erro: {e}"
+
+    def get_listening_state(self) -> str :
+        try:
+            if self.mode_descart:
+                return "Blocking..."
+            return "Listening..."
+        except Exception as e:
+            return f"Erro: {e}"
+
+    def set_listening_state(self) -> bool:
+        try:
+            if self.mode_descart:
+                self.mode_descart = False
+                return self.mode_descart
+            self.mode_descart = True
+            return self.mode_descart
+        except Exception as e:
+            raise Exception(str(e))
 
     def exibir_clientes_conectados(self):
         if self.clients_state == {}:
@@ -69,13 +100,16 @@ class Server:
 
     def fechar_conexao(self):
         print("Encerrando servidor...")
-        self.server_socket.close()
+        try:        
+            self.server_socket.close()
+        except Exception as e:
+            pass
 
     def validar_entrada_usuario(self, entrada) -> bool:
         try:
             if type(entrada) != int:
                 return False
-            elif entrada < 0 or entrada > 2:
+            elif entrada < 0 or entrada > 3:
                 return False
             return True
         
@@ -89,14 +123,19 @@ class Server:
         Função executada por um processo isolado a cada pacote recebido de um cliente
         """
 
-        print(
-            f"Pacote Recebido!\n" +
-            f"Tamanho do pacote recebido: {len(raw_data)}\n" + 
-            f"Endereço IP do cliente: {client_address}"
-        )
 
         # Manipulando pacote recebido e calculando checksum:
         try:
+            if self.mode_descart is True:
+                print("Pacote descartado...")
+                return
+       
+            print(
+                f"Pacote Recebido!\n" +
+                f"Tamanho do pacote recebido: {len(raw_data)}\n" + 
+                f"Endereço IP do cliente: {client_address}"
+            )
+
             # desempacotando:
             package = Package()
             package_sended = package.unpack_package(raw_data)
